@@ -1,4 +1,5 @@
 from pickle import FALSE
+from django.db import IntegrityError
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -8,22 +9,33 @@ from .models import Users
 
 
 @api_view(['GET'])
-def getUser(request, pk):
+def getUser(request):
 
-    user = Users.objects.get(id=pk)
-    serializer = UserSerializer(user, many=False)
-    return Response(serializer.data)
+    user = Users.objects.all()
+    serializer = UserSerializer(user, many=True)
+    items={
+            "user":serializer.data
+        }
+    return Response(items)
 
 
 @api_view(['POST'])
 def createUser(request):
-    data = request.data
-    createUser = Users.objects.create(
-        shopname=data['shopname'],
-        email=data['email']
-    )
-    serializer = UserSerializer(createUser, many=False)
-    return Response(serializer.data)
+    try:
+        data = request.data
+        createUser = Users.objects.create(
+            shopname=data['shopname'],
+            email=data['email']
+        )
+        serializer = UserSerializer(createUser, many=False)
+        items={
+            "user":serializer.data
+        }
+        return Response(serializer.data)
+    except IntegrityError:
+        content={'error':"user already exist "}
+        error={"error":content}
+        return Response(error)
 
 
 @api_view(['GET','POST'])
